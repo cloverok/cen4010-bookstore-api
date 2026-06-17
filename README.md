@@ -69,7 +69,7 @@ Roles rotate every sprint.
 | --- | --- | --- |
 | Sprint 1 | Clive | Riley |
 | Sprint 2 | Ben | Peter |
-| Sprint 3 | | |
+| Sprint 3 | Daniela | Bryan |
 | Sprint 4 | | |
 | Sprint 5 | | |
 

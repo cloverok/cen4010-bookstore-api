@@ -1,9 +1,11 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
+from routes.rating_routes import rating_routes
+from routes.comment_routes import comment_routes
 
 app = Flask(__name__)
 
-ratings = []
-comments = []
+app.register_blueprint(rating_routes)
+app.register_blueprint(comment_routes)
 
 @app.route("/")
 def home():
@@ -11,120 +13,6 @@ def home():
         "message": "CEN4010 Bookstore API is running",
         "status": "success"
     })
-
-@app.route("/ratings", methods=["POST"])
-def add_rating():
-    data = request.get_json()
-
-    user_id = data.get("user_id")
-    book_id = data.get("book_id")
-    rating = data.get("rating")
-
-    if not user_id or not book_id or rating is None:
-        return jsonify({"error": "user_id, book_id, and rating are required"}), 400
-
-    if rating < 1 or rating > 5:
-        return jsonify({"error": "rating must be between 1 and 5"}), 400
-
-    new_rating = {
-        "user_id": user_id,
-        "book_id": book_id,
-        "rating": rating
-    }
-
-    ratings.append(new_rating)
-
-    return jsonify({
-        "message": "Rating added successfully",
-        "rating": new_rating
-    }), 201
-
-@app.route("/comments", methods=["POST"])
-def add_comment():
-    data = request.get_json()
-
-    user_id = data.get("user_id")
-    book_id = data.get("book_id")
-    comment = data.get("comment")
-
-    if not user_id or not book_id or not comment:
-        return jsonify({"error": "user_id, book_id, and comment are required"}), 400
-
-    new_comment = {
-        "user_id": user_id,
-        "book_id": book_id,
-        "comment": comment
-    }
-
-    comments.append(new_comment)
-
-    return jsonify({
-        "message": "Comment added successfully",
-        "comment": new_comment
-    }), 201
-
-@app.route("/books/<int:book_id>/comments", methods=["GET"])
-def get_comments(book_id):
-    book_comments = [comment for comment in comments if comment["book_id"] == book_id]
-    return jsonify(book_comments), 200
-
-@app.route("/books/<int:book_id>/rating", methods=["GET"])
-def get_average_rating(book_id):
-    book_ratings = [rating["rating"] for rating in ratings if rating["book_id"] == book_id]
-
-    if not book_ratings:
-        return jsonify({
-            "book_id": book_id,
-            "average_rating": None,
-            "message": "No ratings yet"
-        }), 200
-
-    average = sum(book_ratings) / len(book_ratings)
-
-    return jsonify({
-        "book_id": book_id,
-        "average_rating": round(average, 2)
-    }), 200
-
-@app.route("/ratings/<int:book_id>", methods=["PUT"])
-def update_rating(book_id):
-    data = request.get_json()
-    user_id = data.get("user_id")
-    new_rating = data.get("rating")
-
-    if not user_id or new_rating is None:
-        return jsonify({"error": "user_id and rating are required"}), 400
-
-    if new_rating < 1 or new_rating > 5:
-        return jsonify({"error": "rating must be between 1 and 5"}), 400
-
-    for rating in ratings:
-        if rating["book_id"] == book_id and rating["user_id"] == user_id:
-            rating["rating"] = new_rating
-            return jsonify({
-                "message": "Rating updated successfully",
-                "rating": rating
-            }), 200
-
-    return jsonify({"error": "Rating not found"}), 404
-
-
-@app.route("/comments/<int:book_id>", methods=["DELETE"])
-def delete_comment(book_id):
-    data = request.get_json()
-    user_id = data.get("user_id")
-
-    if not user_id:
-        return jsonify({"error": "user_id is required"}), 400
-
-    for comment in comments:
-        if comment["book_id"] == book_id and comment["user_id"] == user_id:
-            comments.remove(comment)
-            return jsonify({
-                "message": "Comment deleted successfully"
-            }), 200
-
-    return jsonify({"error": "Comment not found"}), 404
 
 if __name__ == "__main__":
     app.run(debug=True)

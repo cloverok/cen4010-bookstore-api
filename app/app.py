@@ -86,5 +86,45 @@ def get_average_rating(book_id):
         "average_rating": round(average, 2)
     }), 200
 
+@app.route("/ratings/<int:book_id>", methods=["PUT"])
+def update_rating(book_id):
+    data = request.get_json()
+    user_id = data.get("user_id")
+    new_rating = data.get("rating")
+
+    if not user_id or new_rating is None:
+        return jsonify({"error": "user_id and rating are required"}), 400
+
+    if new_rating < 1 or new_rating > 5:
+        return jsonify({"error": "rating must be between 1 and 5"}), 400
+
+    for rating in ratings:
+        if rating["book_id"] == book_id and rating["user_id"] == user_id:
+            rating["rating"] = new_rating
+            return jsonify({
+                "message": "Rating updated successfully",
+                "rating": rating
+            }), 200
+
+    return jsonify({"error": "Rating not found"}), 404
+
+
+@app.route("/comments/<int:book_id>", methods=["DELETE"])
+def delete_comment(book_id):
+    data = request.get_json()
+    user_id = data.get("user_id")
+
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+
+    for comment in comments:
+        if comment["book_id"] == book_id and comment["user_id"] == user_id:
+            comments.remove(comment)
+            return jsonify({
+                "message": "Comment deleted successfully"
+            }), 200
+
+    return jsonify({"error": "Comment not found"}), 404
+
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,15 +1,36 @@
-from flask import Flask, jsonify
+import os
+from flask import Flask, jsonify, request
+from dotenv import load_dotenv
 import mysql.connector
 
 app = Flask(__name__)
+load_dotenv(".env", override=True)
 
 def get_db():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="cm6355582",
-        database="bookstore"
+        host=os.getenv("DB_HOST", "localhost"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME", "bookstore")
     )
+
+def book_exists(book_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM books WHERE id = %s", (book_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return result is not None
+
+def user_exists(user_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return result is not None
 
 @app.route("/cart/<int:user_id>")
 def get_cart(user_id):
@@ -44,8 +65,6 @@ def get_subtotal(user_id):
     subtotal = float(result[0]) if result[0] is not None else 0.0
     return jsonify({"user_id": user_id, "subtotal": subtotal})
 
-from flask import request
-
 @app.route("/cart", methods=["POST"])
 def add_to_cart():
     data = request.get_json()
@@ -55,6 +74,10 @@ def add_to_cart():
 
     if not user_id or not book_id:
         return jsonify({"error": "user_id and book_id are required"}), 400
+    if not user_exists(user_id):
+        return jsonify({"error": f"user_id {user_id} does not exist"}), 404
+    if not book_exists(book_id):
+        return jsonify({"error": f"book_id {book_id} does not exist"}), 404
 
     conn = get_db()
     cursor = conn.cursor()
@@ -66,7 +89,6 @@ def add_to_cart():
     new_id = cursor.lastrowid
     cursor.close()
     conn.close()
-
     return jsonify({"id": new_id, "user_id": user_id, "book_id": book_id, "quantity": quantity}), 201
 
 @app.route("/cart", methods=["DELETE"])
@@ -77,6 +99,10 @@ def delete_from_cart():
 
     if not user_id or not book_id:
         return jsonify({"error": "user_id and book_id are required"}), 400
+    if not user_exists(user_id):
+        return jsonify({"error": f"user_id {user_id} does not exist"}), 404
+    if not book_exists(book_id):
+        return jsonify({"error": f"book_id {book_id} does not exist"}), 404
 
     conn = get_db()
     cursor = conn.cursor()
@@ -88,11 +114,9 @@ def delete_from_cart():
     deleted_count = cursor.rowcount
     cursor.close()
     conn.close()
-
     if deleted_count == 0:
         return jsonify({"error": "no matching cart item found"}), 404
     return jsonify({"deleted": deleted_count, "user_id": user_id, "book_id": book_id})
 
 if __name__ == "__main__":
     app.run(debug=True)
-

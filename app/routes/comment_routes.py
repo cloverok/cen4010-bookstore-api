@@ -51,4 +51,25 @@ def delete_comment(book_id):
                 "message": "Comment deleted successfully"
             }), 200
 
-    return jsonify({"error": "Comment not found"}), 404
+@comment_routes.route("/comments/<int:book_id>", methods=["PUT"])
+def update_comment(book_id):
+    data = request.get_json(silent=True) or {}
+
+    user_id = data.get("user_id")
+    new_comment = data.get("comment")
+
+    if user_id is None or not new_comment:
+        return jsonify({
+            "error": "user_id and comment are required"
+        }), 400
+
+    for comment in comments:
+        if comment["book_id"] == book_id and comment["user_id"] == user_id:
+            comment["comment"] = new_comment
+
+            return jsonify({
+                "message": "Comment updated successfully",
+                "comment": comment
+            }), 200
+
+    return jsonify({"error": "Comment not found"}), 404 

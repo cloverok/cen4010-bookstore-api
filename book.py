@@ -2,6 +2,7 @@
 
 from database.db import db
 
+
 class Book(db.Model):
     __tablename__ = "books"
 
@@ -14,7 +15,6 @@ class Book(db.Model):
     rating = db.Column(db.Float)
     copies_sold = db.Column(db.Integer)
 
-    # Serializer method
     def to_dict(self):
         return {
             "isbn": self.isbn,

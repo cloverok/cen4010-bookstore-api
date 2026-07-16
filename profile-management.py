@@ -3,14 +3,12 @@ import mysql.connector
 
 app = Flask(__name__)
 
-# root password is mysql100!
-
 # todo - merge function w/ other table create function
 def get_db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="mysql100!",
+        password="cm6355582",
         database="bookstore"
     )
  
@@ -38,8 +36,6 @@ def create_profil():
 
     # data.get[] will return & insert None for non-required values missing in JSON data 
     cursor.execute("""INSERT INTO profile (username, password, name, email) VALUES (%s, %s, %s, %s)""", (data['username'], data['password'], data.get('name'), data.get('email')))
-
-    # todo validate username is unique
 
     conn.commit()
     cursor.close()

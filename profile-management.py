@@ -3,7 +3,7 @@ import mysql.connector
 
 app = Flask(__name__)
 
-# todo - merge function w/ other table create function
+# todo - merge function w/ to correct db call
 def get_db():
     return mysql.connector.connect(
         host="localhost",

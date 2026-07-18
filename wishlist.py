@@ -1,217 +1,308 @@
 from flask import Blueprint, jsonify, request
+import mysql.connector
+from mysql.connector import Error, IntegrityError
+
 
 wishlist_bp = Blueprint("wishlist", __name__)
 
-wishlists = []
-wishlist_items = []
 
-books = [
-    {
-        "book_id": 1,
-        "title": "The Hobbit",
-        "author": "J.R.R. Tolkien",
-        "price": 14.99,
-    },
-    {
-        "book_id": 2,
-        "title": "1984",
-        "author": "George Orwell",
-        "price": 12.50,
-    },
-    {
-        "book_id": 3,
-        "title": "Dune",
-        "author": "Frank Herbert",
-        "price": 18.99,
-    },
-]
-
-
-def find_wishlist(wishlist_id):
-    """Return the wishlist with the given ID, or None if it does not exist."""
-    return next(
-        (
-            wishlist
-            for wishlist in wishlists
-            if wishlist["wishlist_id"] == wishlist_id
-        ),
-        None,
+# Connect to your local MySQL database
+def get_db():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="",
+        database="bookstore"
     )
 
 
-def find_book(book_id):
-    """Return the book with the given ID, or None if it does not exist."""
-    return next(
-        (book for book in books if book["book_id"] == book_id),
-        None,
-    )
-
-
+# Create a new wishlist
+# POST /wishlist
 @wishlist_bp.route("/wishlist", methods=["POST"])
 def create_wishlist():
-    data = request.get_json(silent=True)
+    data = request.get_json()
 
-    if not data:
-        return jsonify({"error": "A JSON request body is required."}), 400
+    if data is None:
+        return jsonify({"error": "Wishlist data JSON is empty."}), 400
 
     user_id = data.get("user_id")
     wishlist_name = data.get("wishlist_name")
 
-    if user_id is None or wishlist_name is None:
-        return jsonify(
-            {"error": "user_id and wishlist_name are required."}
-        ), 400
+    if not user_id or not wishlist_name:
+        return jsonify({
+            "error": "user_id and wishlist_name are required."
+        }), 400
 
-    if not isinstance(user_id, int) or user_id <= 0:
-        return jsonify(
-            {"error": "user_id must be a positive integer."}
-        ), 400
+    conn = None
+    cursor = None
 
-    if not isinstance(wishlist_name, str) or not wishlist_name.strip():
-        return jsonify(
-            {"error": "wishlist_name must be a non-empty string."}
-        ), 400
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
 
-    new_wishlist = {
-        "wishlist_id": len(wishlists) + 1,
-        "user_id": user_id,
-        "wishlist_name": wishlist_name.strip(),
-    }
+        # Make sure the user exists
+        cursor.execute(
+            "SELECT uid FROM profile WHERE uid = %s",
+            (user_id,)
+        )
 
-    wishlists.append(new_wishlist)
+        user = cursor.fetchone()
 
-    return jsonify(new_wishlist), 201
+        if user is None:
+            return jsonify({"error": "User not found."}), 404
+
+        # Create the wishlist
+        cursor.execute(
+            """
+            INSERT INTO wishlist (uid, wishlist_name)
+            VALUES (%s, %s)
+            """,
+            (user_id, wishlist_name)
+        )
+
+        conn.commit()
+
+        wishlist_id = cursor.lastrowid
+
+        return jsonify({
+            "success": "Wishlist created successfully.",
+            "wishlist_id": wishlist_id,
+            "user_id": user_id,
+            "wishlist_name": wishlist_name
+        }), 201
+
+    except Error as error:
+        return jsonify({
+            "error": "Unable to create wishlist.",
+            "details": str(error)
+        }), 500
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conn is not None and conn.is_connected():
+            conn.close()
 
 
+# Add a book to a wishlist
+# POST /wishlist/book
 @wishlist_bp.route("/wishlist/book", methods=["POST"])
 def add_book_to_wishlist():
-    data = request.get_json(silent=True)
+    data = request.get_json()
 
-    if not data:
-        return jsonify({"error": "A JSON request body is required."}), 400
+    if data is None:
+        return jsonify({"error": "Wishlist item data JSON is empty."}), 400
 
     wishlist_id = data.get("wishlist_id")
     book_id = data.get("book_id")
 
-    if wishlist_id is None or book_id is None:
-        return jsonify(
-            {"error": "wishlist_id and book_id are required."}
-        ), 400
+    if not wishlist_id or not book_id:
+        return jsonify({
+            "error": "wishlist_id and book_id are required."
+        }), 400
 
-    if not isinstance(wishlist_id, int) or wishlist_id <= 0:
-        return jsonify(
-            {"error": "wishlist_id must be a positive integer."}
-        ), 400
+    conn = None
+    cursor = None
 
-    if not isinstance(book_id, int) or book_id <= 0:
-        return jsonify(
-            {"error": "book_id must be a positive integer."}
-        ), 400
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
 
-    if find_wishlist(wishlist_id) is None:
-        return jsonify({"error": "Wishlist not found."}), 404
+        # Make sure the wishlist exists
+        cursor.execute(
+            "SELECT wishlist_id FROM wishlist WHERE wishlist_id = %s",
+            (wishlist_id,)
+        )
 
-    if find_book(book_id) is None:
-        return jsonify({"error": "Book not found."}), 404
+        wishlist = cursor.fetchone()
 
-    duplicate_item = next(
-        (
-            item
-            for item in wishlist_items
-            if item["wishlist_id"] == wishlist_id
-            and item["book_id"] == book_id
-        ),
-        None,
-    )
+        if wishlist is None:
+            return jsonify({"error": "Wishlist not found."}), 404
 
-    if duplicate_item is not None:
-        return jsonify(
-            {"error": "Book already exists in this wishlist."}
-        ), 409
+        # Make sure the book exists
+        cursor.execute(
+            "SELECT book_id FROM books WHERE book_id = %s",
+            (book_id,)
+        )
 
-    new_item = {
-        "wishlist_item_id": len(wishlist_items) + 1,
-        "wishlist_id": wishlist_id,
-        "book_id": book_id,
-    }
+        book = cursor.fetchone()
 
-    wishlist_items.append(new_item)
+        if book is None:
+            return jsonify({"error": "Book not found."}), 404
 
-    return jsonify(new_item), 201
+        # Check whether the book is already in the wishlist
+        cursor.execute(
+            """
+            SELECT wishlist_item_id
+            FROM wishlist_item
+            WHERE wishlist_id = %s AND book_id = %s
+            """,
+            (wishlist_id, book_id)
+        )
+
+        existing_item = cursor.fetchone()
+
+        if existing_item is not None:
+            return jsonify({
+                "error": "Book is already in this wishlist."
+            }), 409
+
+        # Add the book
+        cursor.execute(
+            """
+            INSERT INTO wishlist_item (wishlist_id, book_id)
+            VALUES (%s, %s)
+            """,
+            (wishlist_id, book_id)
+        )
+
+        conn.commit()
+
+        wishlist_item_id = cursor.lastrowid
+
+        return jsonify({
+            "success": "Book added to wishlist successfully.",
+            "wishlist_item_id": wishlist_item_id,
+            "wishlist_id": wishlist_id,
+            "book_id": book_id
+        }), 201
+
+    except IntegrityError as error:
+        return jsonify({
+            "error": "Book is already in this wishlist.",
+            "details": str(error)
+        }), 409
+
+    except Error as error:
+        return jsonify({
+            "error": "Unable to add book to wishlist.",
+            "details": str(error)
+        }), 500
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conn is not None and conn.is_connected():
+            conn.close()
 
 
+# Remove a book from a wishlist
+# DELETE /wishlist/book
 @wishlist_bp.route("/wishlist/book", methods=["DELETE"])
 def remove_book_from_wishlist():
-    data = request.get_json(silent=True)
+    data = request.get_json()
 
-    if not data:
-        return jsonify({"error": "A JSON request body is required."}), 400
+    if data is None:
+        return jsonify({"error": "Wishlist item data JSON is empty."}), 400
 
     wishlist_id = data.get("wishlist_id")
     book_id = data.get("book_id")
 
-    if wishlist_id is None or book_id is None:
-        return jsonify(
-            {"error": "wishlist_id and book_id are required."}
-        ), 400
+    if not wishlist_id or not book_id:
+        return jsonify({
+            "error": "wishlist_id and book_id are required."
+        }), 400
 
-    if not isinstance(wishlist_id, int) or wishlist_id <= 0:
-        return jsonify(
-            {"error": "wishlist_id must be a positive integer."}
-        ), 400
+    conn = None
+    cursor = None
 
-    if not isinstance(book_id, int) or book_id <= 0:
-        return jsonify(
-            {"error": "book_id must be a positive integer."}
-        ), 400
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
 
-    if find_wishlist(wishlist_id) is None:
-        return jsonify({"error": "Wishlist not found."}), 404
+        cursor.execute(
+            """
+            DELETE FROM wishlist_item
+            WHERE wishlist_id = %s AND book_id = %s
+            """,
+            (wishlist_id, book_id)
+        )
 
-    if find_book(book_id) is None:
-        return jsonify({"error": "Book not found."}), 404
+        if cursor.rowcount == 0:
+            return jsonify({
+                "error": "Book was not found in this wishlist."
+            }), 404
 
-    item_to_remove = next(
-        (
-            item
-            for item in wishlist_items
-            if item["wishlist_id"] == wishlist_id
-            and item["book_id"] == book_id
-        ),
-        None,
-    )
+        conn.commit()
 
-    if item_to_remove is None:
-        return jsonify(
-            {"error": "Book not found in this wishlist."}
-        ), 404
-
-    wishlist_items.remove(item_to_remove)
-
-    return jsonify(
-        {
-            "message": "Book removed from wishlist.",
+        return jsonify({
+            "success": "Book removed from wishlist successfully.",
             "wishlist_id": wishlist_id,
-            "book_id": book_id,
-        }
-    ), 200
+            "book_id": book_id
+        }), 200
+
+    except Error as error:
+        return jsonify({
+            "error": "Unable to remove book from wishlist.",
+            "details": str(error)
+        }), 500
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conn is not None and conn.is_connected():
+            conn.close()
 
 
+# Retrieve all books from a wishlist
+# GET /wishlist/<wishlist_id>
 @wishlist_bp.route("/wishlist/<int:wishlist_id>", methods=["GET"])
-def get_books_in_wishlist(wishlist_id):
-    if find_wishlist(wishlist_id) is None:
-        return jsonify({"error": "Wishlist not found."}), 404
+def get_wishlist(wishlist_id):
+    conn = None
+    cursor = None
 
-    wishlist_book_ids = [
-        item["book_id"]
-        for item in wishlist_items
-        if item["wishlist_id"] == wishlist_id
-    ]
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
 
-    result = [
-        book
-        for book in books
-        if book["book_id"] in wishlist_book_ids
-    ]
+        # Make sure the wishlist exists
+        cursor.execute(
+            """
+            SELECT wishlist_id, uid, wishlist_name
+            FROM wishlist
+            WHERE wishlist_id = %s
+            """,
+            (wishlist_id,)
+        )
 
-    return jsonify(result), 200
+        wishlist = cursor.fetchone()
+
+        if wishlist is None:
+            return jsonify({"error": "Wishlist not found."}), 404
+
+        # Retrieve every book in the wishlist
+        cursor.execute(
+            """
+            SELECT books.*
+            FROM books
+            INNER JOIN wishlist_item
+                ON books.book_id = wishlist_item.book_id
+            WHERE wishlist_item.wishlist_id = %s
+            """,
+            (wishlist_id,)
+        )
+
+        books = cursor.fetchall()
+
+        return jsonify({
+            "wishlist_id": wishlist["wishlist_id"],
+            "user_id": wishlist["uid"],
+            "wishlist_name": wishlist["wishlist_name"],
+            "books": books
+        }), 200
+
+    except Error as error:
+        return jsonify({
+            "error": "Unable to retrieve wishlist.",
+            "details": str(error)
+        }), 500
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conn is not None and conn.is_connected():
+            conn.close()

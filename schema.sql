@@ -41,3 +41,45 @@ VALUES
 -- =================================================================
 -- ToDo Tables & Sample Data
 -- =================================================================
+
+
+-- =================================================================
+-- Wishlist Management Tables & Sample Data
+-- Owner: Daniela Martinez
+-- =================================================================
+
+CREATE TABLE IF NOT EXISTS `wishlist` (
+    `wishlist_id` INT NOT NULL AUTO_INCREMENT,
+    `uid` INT NOT NULL,
+    `wishlist_name` VARCHAR(100) NOT NULL,
+    PRIMARY KEY (`wishlist_id`),
+    CONSTRAINT `fk_wishlist_profile`
+        FOREIGN KEY (`uid`)
+        REFERENCES `profile` (`uid`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `wishlist_item` (
+    `wishlist_item_id` INT NOT NULL AUTO_INCREMENT,
+    `wishlist_id` INT NOT NULL,
+    `book_id` INT NOT NULL,
+    PRIMARY KEY (`wishlist_item_id`),
+    UNIQUE INDEX `wishlist_book_UNIQUE` (`wishlist_id`, `book_id`),
+    CONSTRAINT `fk_wishlist_item_wishlist`
+        FOREIGN KEY (`wishlist_id`)
+        REFERENCES `wishlist` (`wishlist_id`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT `fk_wishlist_item_book`
+        FOREIGN KEY (`book_id`)
+        REFERENCES `books` (`book_id`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+INSERT IGNORE INTO `wishlist`
+    (`wishlist_id`, `uid`, `wishlist_name`)
+VALUES
+    (1, 1, 'Favorites');
+

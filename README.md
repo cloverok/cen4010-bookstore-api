@@ -68,9 +68,9 @@ Roles rotate every sprint.
 | Sprint | Scrum Master | Product Owner |
 | --- | --- | --- |
 | Sprint 1 | Clive | Riley |
-| Sprint 2 | | |
-| Sprint 3 | | |
-| Sprint 4 | | |
+| Sprint 2 | Ben | Peter |
+| Sprint 3 | Daniela | Bryan |
+| Sprint 4 | Peter | Ben |
 | Sprint 5 | | |
 
 ## Branch Workflow

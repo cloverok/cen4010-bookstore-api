@@ -1,6 +1,6 @@
-from flask import Flask, jsonify, request
+from flask import Blueprint, jsonify, request
 
-app = Flask(__name__)
+wishlist_bp = Blueprint("wishlist", __name__)
 
 wishlists = []
 wishlist_items = []
@@ -47,7 +47,7 @@ def find_book(book_id):
     )
 
 
-@app.route("/wishlist", methods=["POST"])
+@wishlist_bp.route("/wishlist", methods=["POST"])
 def create_wishlist():
     data = request.get_json(silent=True)
 
@@ -83,7 +83,7 @@ def create_wishlist():
     return jsonify(new_wishlist), 201
 
 
-@app.route("/wishlist/book", methods=["POST"])
+@wishlist_bp.route("/wishlist/book", methods=["POST"])
 def add_book_to_wishlist():
     data = request.get_json(silent=True)
 
@@ -140,7 +140,7 @@ def add_book_to_wishlist():
     return jsonify(new_item), 201
 
 
-@app.route("/wishlist/book", methods=["DELETE"])
+@wishlist_bp.route("/wishlist/book", methods=["DELETE"])
 def remove_book_from_wishlist():
     data = request.get_json(silent=True)
 
@@ -197,7 +197,7 @@ def remove_book_from_wishlist():
     ), 200
 
 
-@app.route("/wishlist/<int:wishlist_id>", methods=["GET"])
+@wishlist_bp.route("/wishlist/<int:wishlist_id>", methods=["GET"])
 def get_books_in_wishlist(wishlist_id):
     if find_wishlist(wishlist_id) is None:
         return jsonify({"error": "Wishlist not found."}), 404
@@ -215,7 +215,3 @@ def get_books_in_wishlist(wishlist_id):
     ]
 
     return jsonify(result), 200
-
-
-if __name__ == "__main__":
-    app.run(debug=True)

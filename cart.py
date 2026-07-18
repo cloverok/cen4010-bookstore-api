@@ -1,17 +1,14 @@
-import os
-from flask import Flask, jsonify, request
-from dotenv import load_dotenv
+from flask import Blueprint, jsonify, request
 import mysql.connector
 
-app = Flask(__name__)
-load_dotenv(".env", override=True)
+cart_bp = Blueprint("cart", __name__)
 
 def get_db():
     return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME", "bookstore")
+        host="localhost",
+        user="root",
+        password="cm6355582",
+        database="bookstore"
     )
 
 def book_exists(book_id):
@@ -32,7 +29,7 @@ def user_exists(user_id):
     conn.close()
     return result is not None
 
-@app.route("/cart/<int:user_id>")
+@cart_bp.route("/cart/<int:user_id>")
 def get_cart(user_id):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
@@ -49,7 +46,7 @@ def get_cart(user_id):
         r["price"] = float(r["price"])
     return jsonify(rows)
 
-@app.route("/cart/<int:user_id>/subtotal")
+@cart_bp.route("/cart/<int:user_id>/subtotal")
 def get_subtotal(user_id):
     conn = get_db()
     cursor = conn.cursor()
@@ -65,7 +62,7 @@ def get_subtotal(user_id):
     subtotal = float(result[0]) if result[0] is not None else 0.0
     return jsonify({"user_id": user_id, "subtotal": subtotal})
 
-@app.route("/cart", methods=["POST"])
+@cart_bp.route("/cart", methods=["POST"])
 def add_to_cart():
     data = request.get_json()
     user_id = data.get("user_id")
@@ -91,7 +88,7 @@ def add_to_cart():
     conn.close()
     return jsonify({"id": new_id, "user_id": user_id, "book_id": book_id, "quantity": quantity}), 201
 
-@app.route("/cart", methods=["DELETE"])
+@cart_bp.route("/cart", methods=["DELETE"])
 def delete_from_cart():
     data = request.get_json()
     user_id = data.get("user_id")
@@ -117,6 +114,3 @@ def delete_from_cart():
     if deleted_count == 0:
         return jsonify({"error": "no matching cart item found"}), 404
     return jsonify({"deleted": deleted_count, "user_id": user_id, "book_id": book_id})
-
-if __name__ == "__main__":
-    app.run(debug=True)

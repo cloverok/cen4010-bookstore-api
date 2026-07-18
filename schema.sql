@@ -41,3 +41,39 @@ VALUES
 -- =================================================================
 -- ToDo Tables & Sample Data
 -- =================================================================
+
+
+-- =================================================================
+-- Shopping Cart Tables & Sample Data
+-- =================================================================
+CREATE TABLE IF NOT EXISTS `books` (
+    `id`     INT           NOT NULL AUTO_INCREMENT,
+    `title`  VARCHAR(255)  NOT NULL,
+    `author` VARCHAR(255)  NULL,
+    `price`  DECIMAL(6,2)  NOT NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `cart_items` (
+    `id`       INT NOT NULL AUTO_INCREMENT,
+    `uid`      INT NOT NULL,
+    `book_id`  INT NOT NULL,
+    `quantity` INT NOT NULL DEFAULT 1,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_cart_uid`
+        FOREIGN KEY (`uid`) REFERENCES `profile` (`uid`),
+    CONSTRAINT `fk_cart_book`
+        FOREIGN KEY (`book_id`) REFERENCES `books` (`id`)
+);
+
+INSERT INTO `books` (`title`, `author`, `price`)
+VALUES
+    ('The Hobbit', 'J.R.R. Tolkien', 14.99),
+    ('1984', 'George Orwell', 12.50),
+    ('Dune', 'Frank Herbert', 18.00);
+
+INSERT INTO `cart_items` (`uid`, `book_id`, `quantity`)
+VALUES
+    (1, 1, 2),
+    (1, 2, 1),
+    (2, 3, 1);

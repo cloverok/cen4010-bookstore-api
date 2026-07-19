@@ -71,7 +71,7 @@ Roles rotate every sprint.
 | Sprint 2 | Ben | Peter |
 | Sprint 3 | Daniela | Bryan |
 | Sprint 4 | Peter | Ben |
-| Sprint 5 | | |
+| Sprint 5 | Clive | Riley |
 
 ## Branch Workflow
 

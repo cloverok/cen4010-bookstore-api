@@ -14,7 +14,7 @@ def get_db():
 def book_exists(book_id):
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM books WHERE id = %s", (book_id,))
+    cursor.execute("SELECT book_id FROM books WHERE book_id = %s", (book_id,))
     result = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -34,9 +34,9 @@ def get_cart(uid):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT b.id, b.title, b.author, b.price, ci.quantity
+        SELECT b.book_id, b.title, b.author, b.price, ci.quantity
         FROM cart_items ci
-        JOIN books b ON b.id = ci.book_id
+        JOIN books b ON b.book_id = ci.book_id
         WHERE ci.uid = %s
     """, (uid,))
     rows = cursor.fetchall()
@@ -53,7 +53,7 @@ def get_subtotal(uid):
     cursor.execute("""
         SELECT SUM(b.price * ci.quantity) AS subtotal
         FROM cart_items ci
-        JOIN books b ON b.id = ci.book_id
+        JOIN books b ON b.book_id = ci.book_id
         WHERE ci.uid = %s
     """, (uid,))
     result = cursor.fetchone()

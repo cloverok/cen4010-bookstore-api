@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request
+from app.database.db import get_db_connection
 
 rating_routes = Blueprint("rating_routes", __name__)
 
@@ -13,13 +14,13 @@ def add_rating():
     rating_value = data.get("rating")
 
     if user_id is None or book_id is None or rating_value is None:
-        return jsonify({
+        return jsonify({ 
             "error": "user_id, book_id, and rating are required"
         }), 400
 
     if rating_value < 1 or rating_value > 5:
         return jsonify({
-            "error": "rating must be between 1 and 5"
+            "error": "rating must be a number between 1 and 5"
         }), 400
 
     # Prevent the same user from rating the same book twice

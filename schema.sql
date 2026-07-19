@@ -2,6 +2,7 @@ USE bookstore;
 
 -- =================================================================
 -- Profile Management Tables & Sample Data
+-- Owner: Ben
 -- =================================================================
 CREATE TABLE IF NOT EXISTS `profile` (
     `uid`      INT          NOT NULL AUTO_INCREMENT,
@@ -31,7 +32,7 @@ VALUES
     ('bJohns',     'qwert123!', 'Ben Johns',        'bjohns@fiu.com'),
     ('tJefferson', 'Winter1!',  'Thomas Jefferson',  'tjefferson@example.com'),
     ('twoods',     'golf_fan1#','Tiger Woods',        'twoods@pga.com');
-    
+
 INSERT INTO `creditCard` (`card_number`, `uid`, `expiration`, `cvv`)
 VALUES
     ('4111111111111111', 1, '2027-04-30', '123'),
@@ -39,15 +40,48 @@ VALUES
     ('340000000000009',  3, '2028-01-31', '789');
 
 -- =================================================================
--- ToDo Tables & Sample Data
+-- Shared Books Table
 -- =================================================================
+CREATE TABLE IF NOT EXISTS `books` (
+    `book_id` INT           NOT NULL AUTO_INCREMENT,
+    `title`   VARCHAR(255)  NOT NULL,
+    `author`  VARCHAR(255)  NULL,
+    `price`   DECIMAL(6,2)  NOT NULL,
+    PRIMARY KEY (`book_id`)
+);
 
+INSERT INTO `books` (`title`, `author`, `price`)
+VALUES
+    ('The Hobbit', 'J.R.R. Tolkien', 14.99),
+    ('1984', 'George Orwell', 12.50),
+    ('Dune', 'Frank Herbert', 18.00);
+
+-- =================================================================
+-- Shopping Cart Tables & Sample Data
+-- Owner: Clive
+-- =================================================================
+CREATE TABLE IF NOT EXISTS `cart_items` (
+    `id`       INT NOT NULL AUTO_INCREMENT,
+    `uid`      INT NOT NULL,
+    `book_id`  INT NOT NULL,
+    `quantity` INT NOT NULL DEFAULT 1,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_cart_uid`
+        FOREIGN KEY (`uid`) REFERENCES `profile` (`uid`),
+    CONSTRAINT `fk_cart_book`
+        FOREIGN KEY (`book_id`) REFERENCES `books` (`book_id`)
+);
+
+INSERT INTO `cart_items` (`uid`, `book_id`, `quantity`)
+VALUES
+    (1, 1, 2),
+    (1, 2, 1),
+    (2, 3, 1);
 
 -- =================================================================
 -- Wishlist Management Tables & Sample Data
 -- Owner: Daniela Martinez
 -- =================================================================
-
 CREATE TABLE IF NOT EXISTS `wishlist` (
     `wishlist_id` INT NOT NULL AUTO_INCREMENT,
     `uid` INT NOT NULL,
@@ -82,4 +116,3 @@ INSERT IGNORE INTO `wishlist`
     (`wishlist_id`, `uid`, `wishlist_name`)
 VALUES
     (1, 1, 'Favorites');
-

@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 
-from app.database.scheme import initialize_rating_comment_schema
+from app.database.schema import initialize_database
 from app.routes.rating_routes import rating_routes
 from app.routes.comment_routes import comment_routes
 
@@ -25,5 +25,5 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    initialize_rating_comment_schema()
+    initialize_database()
     app.run(debug=True)

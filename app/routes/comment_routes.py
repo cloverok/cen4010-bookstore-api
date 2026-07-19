@@ -8,13 +8,13 @@ comment_routes = Blueprint("comment_routes", __name__)
 def add_comment():
     data = request.get_json(silent=True) or {}
 
-    user_id = data.get("user_id")
+    uid = data.get("uid")
     book_id = data.get("book_id")
     comment_text = data.get("comment")
 
-    if user_id is None or book_id is None or not comment_text:
+    if uid is None or book_id is None or not comment_text:
         return jsonify({
-            "error": "user_id, book_id, and comment are required"
+            "error": "uid, book_id, and comment are required"
         }), 400
 
     connection = get_db_connection()
@@ -22,9 +22,9 @@ def add_comment():
     try:
         with connection.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO comments (user_id, book_id, comment)
+                INSERT INTO comments (uid, book_id, comment)
                 VALUES (%s, %s, %s)
-            """, (user_id, book_id, comment_text))
+            """, (uid, book_id, comment_text))
 
             comment_id = cursor.lastrowid
 
@@ -34,7 +34,7 @@ def add_comment():
             "message": "Comment added successfully",
             "comment": {
                 "comment_id": comment_id,
-                "user_id": user_id,
+                "uid": uid,
                 "book_id": book_id,
                 "comment": comment_text
             }
@@ -43,7 +43,7 @@ def add_comment():
     except Exception as error:
         connection.rollback()
         return jsonify({
-            "error": "Unable to add comment",
+            "error": "Unable to create comment",
             "details": str(error)
         }), 500
 
@@ -58,7 +58,7 @@ def get_comments(book_id):
     try:
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT comment_id, user_id, book_id, comment
+                SELECT comment_id, uid, book_id, comment
                 FROM comments
                 WHERE book_id = %s
                 ORDER BY comment_id ASC
@@ -76,12 +76,12 @@ def get_comments(book_id):
 def update_comment(book_id):
     data = request.get_json(silent=True) or {}
 
-    user_id = data.get("user_id")
+    uid = data.get("uid")
     new_comment = data.get("comment")
 
-    if user_id is None or not new_comment:
+    if uid is None or not new_comment:
         return jsonify({
-            "error": "user_id and comment are required"
+            "error": "uid and comment are required"
         }), 400
 
     connection = get_db_connection()
@@ -91,8 +91,8 @@ def update_comment(book_id):
             cursor.execute("""
                 UPDATE comments
                 SET comment = %s
-                WHERE user_id = %s AND book_id = %s
-            """, (new_comment, user_id, book_id))
+                WHERE uid = %s AND book_id = %s
+            """, (new_comment, uid, book_id))
 
             if cursor.rowcount == 0:
                 return jsonify({"error": "Comment not found"}), 404
@@ -102,7 +102,7 @@ def update_comment(book_id):
         return jsonify({
             "message": "Comment updated successfully",
             "comment": {
-                "user_id": user_id,
+                "uid": uid,
                 "book_id": book_id,
                 "comment": new_comment
             }
@@ -115,10 +115,10 @@ def update_comment(book_id):
 @comment_routes.route("/comments/<int:book_id>", methods=["DELETE"])
 def delete_comment(book_id):
     data = request.get_json(silent=True) or {}
-    user_id = data.get("user_id")
+    uid = data.get("uid")
 
-    if user_id is None:
-        return jsonify({"error": "user_id is required"}), 400
+    if uid is None:
+        return jsonify({"error": "uid is required"}), 400
 
     connection = get_db_connection()
 
@@ -126,8 +126,8 @@ def delete_comment(book_id):
         with connection.cursor() as cursor:
             cursor.execute("""
                 DELETE FROM comments
-                WHERE user_id = %s AND book_id = %s
-            """, (user_id, book_id))
+                WHERE uid = %s AND book_id = %s
+            """, (uid, book_id))
 
             if cursor.rowcount == 0:
                 return jsonify({"error": "Comment not found"}), 404

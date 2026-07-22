@@ -39,22 +39,61 @@ VALUES
     ('5500000000000004', 2, '2026-11-30', '456'),
     ('340000000000009',  3, '2028-01-31', '789');
 
+
+-- =================================================================
+-- Authors Table (Book Details)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS `authors` (
+    `author_id` INT NOT NULL AUTO_INCREMENT,
+    `first_name` VARCHAR(100) NOT NULL,
+    `last_name` VARCHAR(100) NOT NULL,
+    `biography` TEXT,
+    `publisher` VARCHAR(255),
+    PRIMARY KEY (`author_id`)
+    );
+
+
+
 -- =================================================================
 -- Shared Books Table
 -- =================================================================
 CREATE TABLE IF NOT EXISTS `books` (
-    `book_id` INT           NOT NULL AUTO_INCREMENT,
-    `title`   VARCHAR(255)  NOT NULL,
-    `author`  VARCHAR(255)  NULL,
-    `price`   DECIMAL(6,2)  NOT NULL,
-    PRIMARY KEY (`book_id`)
-);
+    `book_id` INT NOT NULL AUTO_INCREMENT,
+    `isbn` VARCHAR(20) NOT NULL UNIQUE,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT,
+    `price` DECIMAL(8,2) NOT NULL,
+    `author_id` INT NOT NULL,
+    `genre` VARCHAR(100),
+    `publisher` VARCHAR(255),
+    `year_published` INT,
+    `copies_sold` INT DEFAULT 0,
+    PRIMARY KEY (`book_id`),
+    FOREIGN KEY (`author_id`) REFERENCES `authors`(`author_id`)
+    );
 
-INSERT INTO `books` (`title`, `author`, `price`)
+
+-- =================================================================
+-- Sample Authors
+-- =================================================================
+INSERT INTO `authors`
+    (`first_name`, `last_name`, `biography`, `publisher`)
 VALUES
-    ('The Hobbit', 'J.R.R. Tolkien', 14.99),
-    ('1984', 'George Orwell', 12.50),
-    ('Dune', 'Frank Herbert', 18.00);
+    ('J.R.R.', 'Tolkien', 'English writer and author of fantasy works.', 'Houghton Mifflin'),
+    ('George', 'Orwell', 'English novelist and essayist.', 'Signet Classics'),
+    ('Frank', 'Herbert', 'American science fiction author.', 'Ace Books');
+
+
+-- =================================================================
+-- Sample Books
+-- =================================================================
+INSERT INTO `books`
+    (`isbn`, `title`, `description`, `price`, `author_id`, `genre`, `publisher`, `year_published`, `copies_sold`)
+VALUES
+    ('9780547928227', 'The Hobbit', 'Fantasy adventure novel', 14.99, 1, 'Fantasy', 'Houghton Mifflin', 1937, 103456454),
+    ('9780451524935', '1984', 'Dystopian novel', 12.50, 2, 'Dystopian', 'Signet Classics', 1949, 504565665),
+    ('9780441013593', 'Dune', 'Science fiction novel', 18.00, 3, 'Science Fiction', 'Ace Books', 1965, 20645656);
+
 
 -- =================================================================
 -- Shopping Cart Tables & Sample Data

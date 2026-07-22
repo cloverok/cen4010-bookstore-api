@@ -34,9 +34,12 @@ def get_cart(uid):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT b.book_id, b.title, b.author, b.price, ci.quantity
+        SELECT b.book_id, b.title,
+               CONCAT(a.first_name, ' ', a.last_name) AS author,
+               b.price, ci.quantity
         FROM cart_items ci
         JOIN books b ON b.book_id = ci.book_id
+        JOIN authors a ON a.author_id = b.author_id
         WHERE ci.uid = %s
     """, (uid,))
     rows = cursor.fetchall()

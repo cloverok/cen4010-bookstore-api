@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from models.book import Book
+from book import Book
 
 browse_bp = Blueprint(
     "browse",

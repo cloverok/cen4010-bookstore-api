@@ -1,6 +1,4 @@
-# models/book.py
-
-from database.db import db
+from db import db
 
 
 class Book(db.Model):
